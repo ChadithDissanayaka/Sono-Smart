@@ -5,6 +5,12 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cors = require('cors');
 
+// Import routes
+const authRoutes = require('./routes/authRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const quizRoutes = require('./routes/quizRoutes');
+const scanRoutes = require('./routes/scanRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 // Connect to MongoDB
 connectDB();
@@ -20,6 +26,12 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Something went wrong!' });
 });
 
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/patients', patientRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/scan', scanRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.get('/api/health', async (req, res) => {
   try {
