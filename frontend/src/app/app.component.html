@@ -1,0 +1,87 @@
+<div class="app-container">
+  <header class="app-header">
+    <nav class="nav-container">
+      <a routerLink="/" class="logo">
+        <div class="logo-icon">
+          <img src="logo.png" alt="SonoSmart Logo">
+        </div>
+        <span>SonoSmart</span>
+      </a>
+      <div class="nav-links">
+        <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Home</a>
+        <a href="#about" (click)="navigateToAbout($event)">About Us</a>
+        <ng-container *ngIf="!authService.isLoggedIn()">
+          <a routerLink="login" routerLinkActive="active">Login</a>
+          <a routerLink="register" routerLinkActive="active">Register</a>
+        </ng-container>
+        <ng-container *ngIf="authService.isLoggedIn()">
+          <ng-container *ngIf="authService.getCurrentUser()?.role === 'professional'">
+            <a routerLink="patients" routerLinkActive="active">Patients</a>
+          </ng-container>
+          <ng-container *ngIf="authService.getCurrentUser()?.role === 'trainee'">
+            <a routerLink="qa" routerLinkActive="active">QA</a>
+          </ng-container>
+          <a routerLink="scans" routerLinkActive="active">Scans</a>
+          <a routerLink="reports" routerLinkActive="active">Reports</a>
+          <div class="user-menu">
+            <div class="user-avatar" [title]="authService.getCurrentUser()?.firstName || 'User'">
+              {{ (authService.getCurrentUser()?.firstName || 'U')[0] }}
+            </div>
+            <a href="#" (click)="$event.preventDefault(); logout()">Logout</a>
+          </div>
+        </ng-container>
+      </div>
+    </nav>
+  </header>
+
+  <main class="app-content">
+    <router-outlet />
+  </main>
+
+  <footer class="app-footer">
+    <div class="footer-content">
+      <div class="footer-sections">
+        <div class="footer-section">
+          <h4>Contact Us</h4>
+          <a href="mailto:contact@sonosmart.com" class="social-link">
+            <span class="material-icons-outlined">email</span>
+            <span>contact&#64;sonosmart.com</span>
+          </a>
+          <a href="tel:+1234567890" class="social-link">
+            <span class="material-icons-outlined">smartphone</span>
+            <span>+1 (234) 567-890</span>
+          </a>
+        </div>
+        <div class="footer-section">
+          <h4>Follow Us</h4>
+          <a href="https://linkedin.com/company/sonosmart" target="_blank" class="social-link">
+            <span class="material-icons-outlined">link</span>
+            <span>LinkedIn</span>
+          </a>
+          <a href="https://youtube.com/sonosmart" target="_blank" class="social-link">
+            <span class="material-icons-outlined">smart_display</span>
+            <span>YouTube</span>
+          </a>
+        </div>
+        <div class="footer-section">
+          <h4>Resources</h4>
+          <a href="#" class="social-link">
+            <span class="material-icons-outlined">article</span>
+            <span>Blog</span>
+          </a>
+          <a href="#" class="social-link">
+            <span class="material-icons-outlined">help_outline</span>
+            <span>Help Center</span>
+          </a>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; {{ currentYear }} SonoSmart. All rights reserved.</p>
+        <div class="footer-links">
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
