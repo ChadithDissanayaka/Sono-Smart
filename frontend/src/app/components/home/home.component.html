@@ -1,0 +1,114 @@
+<div class="home-container">
+  <section class="carousel-section">
+    <div class="carousel-container">
+      <div *ngFor="let image of carouselImages; let i = index"
+           class="carousel-slide"
+           [class.active]="i === currentSlide">
+        <div class="carousel-content animate-fade-in">
+          <ng-container *ngIf="i === 0">
+            <h1>AI-Powered <span class="text-highlight">Ultrasound</span><br>Organ Classification</h1>
+            <p>Revolutionizing medical imaging with real-time AI assistance for faster, more accurate diagnoses.</p>
+          </ng-container>
+          <ng-container *ngIf="i === 1">
+            <h1>Enhanced <span class="text-highlight">Clinical</span><br>Decision Making</h1>
+            <p>Our AI technology helps medical professionals identify organs with greater precision and confidence.</p>
+          </ng-container>
+          <ng-container *ngIf="i === 2">
+            <h1>Training <span class="text-highlight">Platform</span><br>For Students</h1>
+            <p>Practice ultrasound organ identification with instant AI verification and feedback.</p>
+          </ng-container>
+          <ng-container *ngIf="i === 3">
+            <h1>Multi-Organ <span class="text-highlight">Classification</span><br>Technology</h1>
+            <p>Accurately classify bladder, bowel, gallbladder, kidney, liver, and spleen in real-time.</p>
+          </ng-container>
+
+          <div class="cta-buttons">
+            <button class="btn-primary animate-slide-up" (click)="navigateToScan()">Try Demo</button>
+            <button class="btn-secondary animate-slide-up" (click)="scrollToSolutions()">Learn More</button>
+          </div>
+        </div>
+        <div class="carousel-image" [style.background-image]="'url(/' + image + ')'">
+        </div>
+      </div>
+
+      <button class="carousel-btn prev" (click)="prevSlide()">
+        <span class="material-icons-outlined">chevron_left</span>
+      </button>
+      <button class="carousel-btn next" (click)="nextSlide()">
+        <span class="material-icons-outlined">chevron_right</span>
+      </button>
+
+      <div class="carousel-nav">
+        <div *ngFor="let image of carouselImages; let i = index"
+             class="carousel-indicator"
+             [class.active]="i === currentSlide"
+             (click)="setCurrentSlide(i)">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="our-solution-section" id="solutions">
+    <h2>What We Offer?</h2>
+    <p class="section-description">AI-driven ultrasound organ classification system that enhances diagnostic accuracy and efficiency</p>
+
+    <div class="solution-grid">
+      <div class="solution-card animate-fade-in">
+        <span class="material-icons-outlined">visibility</span>
+        <h3>Real-Time Classification</h3>
+        <p>Instantly identifies and highlights organs during ultrasound procedures</p>
+      </div>
+      <div class="solution-card animate-fade-in">
+        <span class="material-icons-outlined">medical_information</span>
+        <h3>Multi-Organ Classification</h3>
+        <p>Accurately detects bladder, bowel, gallbladder, kidney, liver, and spleen</p>
+      </div>
+      <div class="solution-card animate-fade-in">
+        <span class="material-icons-outlined">health_and_safety</span>
+        <h3>Clinical Assistance</h3>
+        <p>Helps medical professionals improve diagnostic efficiency and accuracy</p>
+      </div>
+      <div class="solution-card animate-fade-in">
+        <span class="material-icons-outlined">school</span>
+        <h3>Training Platform</h3>
+        <p>Assists medical students in practicing and verifying their predictions</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="for-users-section">
+     <div class="section-header">
+      <button class="toggle-btn" (click)="toggleUsersSection()">
+        <span class="material-icons-outlined">{{ isUsersSectionExpanded ? 'expand_less' : 'expand_more' }}</span>
+        {{ isUsersSectionExpanded ? 'Show Less' : 'Show More' }}
+      </button>
+    </div>
+    <div class="users-grid" [@expandCollapse]="isUsersSectionExpanded ? 'expanded' : 'collapsed'" *ngIf="isUsersSectionExpanded || isAnimating">
+      <div class="user-card animate-fade-in">
+        <h3>For Medical Professionals</h3>
+        <p>We provide an AI-driven ultrasound organ classification system that delivers real-time, accurate identification of abdominal organs, including bladder, bowel, gallbladder, kidney, liver, and spleen. This system significantly reduces cognitive load, enhancing diagnostic efficiency and allowing you to focus more on patient care and clinical decision-making.</p>
+        <ul class="benefits-list">
+          <li><span class="material-icons-outlined">speed</span>Real-time organ Classification</li>
+          <li><span class="material-icons-outlined">psychology</span>Reduced cognitive load</li>
+          <li><span class="material-icons-outlined">verified</span>Enhanced diagnostic accuracy</li>
+          <li><span class="material-icons-outlined">schedule</span>Improved workflow efficiency</li>
+        </ul>
+      </div>
+
+      <div class="user-card animate-fade-in">
+        <h3>For Medical Students</h3>
+        <p>We offer an AI-driven ultrasound organ classification system to help medical students refine their diagnostic skills. You can upload ultrasound images and predict the organs bladder, bowel, gallbladder, kidney, liver, and spleen. And the system will verify whether your predictions are correct. Additionally, the QA Session with MCQs featuring ultrasound images of abnormal organs will further help improve your diagnostic accuracy and prepare you for real-world medical imaging tasks.</p>
+        <ul class="benefits-list">
+          <li><span class="material-icons-outlined">school</span>Practice predictions</li>
+          <li><span class="material-icons-outlined">quiz</span>MCQ sessions</li>
+          <li><span class="material-icons-outlined">check_circle</span>Instant verification</li>
+          <li><span class="material-icons-outlined">trending_up</span>Skill improvement tracking</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="about">
+    <app-about></app-about>
+  </section>
+</div>
