@@ -1,0 +1,137 @@
+<div class="auth-container">
+  <div class="auth-card">
+    <h2 class="auth-title">Create an Account</h2>
+
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="auth-form">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="firstName">First Name</label>
+          <input
+            type="text"
+            id="firstName"
+            formControlName="firstName"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['firstName'].errors}"
+          >
+          <div *ngIf="submitted && f['firstName'].errors" class="error-text">
+            <span *ngIf="f['firstName'].errors['required']">First name is required</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="lastName">Last Name</label>
+          <input
+            type="text"
+            id="lastName"
+            formControlName="lastName"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['lastName'].errors}"
+          >
+          <div *ngIf="submitted && f['lastName'].errors" class="error-text">
+            <span *ngIf="f['lastName'].errors['required']">Last name is required</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            formControlName="email"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['email'].errors}"
+          >
+          <div *ngIf="submitted && f['email'].errors" class="error-text">
+            <span *ngIf="f['email'].errors['required']">Email is required</span>
+            <span *ngIf="f['email'].errors['email']">Please enter a valid email</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['password'].errors}"
+          >
+          <div class="password-strength" *ngIf="f['password'].value">
+            <div class="strength-bar" [ngClass]="passwordStrength">
+              <div class="strength-segment" *ngFor="let _ of [1,2,3]"></div>
+            </div>
+            <span class="strength-text" [ngClass]="passwordStrength">{{passwordStrengthText}}</span>
+          </div>
+          <div *ngIf="submitted && f['password'].errors" class="error-text">
+            <span *ngIf="f['password'].errors['required']">Password is required</span>
+            <span *ngIf="f['password'].errors['minlength']">Password must be at least 8 characters</span>
+            <span *ngIf="f['password'].errors['pattern']">Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="confirmPassword">Confirm Password</label>
+          <input
+            type="password"
+            id="confirmPassword"
+            formControlName="confirmPassword"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['confirmPassword'].errors}"
+          >
+          <div *ngIf="submitted && f['confirmPassword'].errors" class="error-text">
+            <span *ngIf="f['confirmPassword'].errors['required']">Password confirmation is required</span>
+            <span *ngIf="f['confirmPassword'].errors['mustMatch']">Passwords must match</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="role">I am a</label>
+          <select
+            id="role"
+            formControlName="role"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['role'].errors}"
+          >
+            <option value="">Select your role</option>
+            <option value="professional">Professional</option>
+            <option value="trainee">Trainee</option>
+          </select>
+          <div *ngIf="submitted && f['role'].errors" class="error-text">
+            <span *ngIf="f['role'].errors['required']">Role is required</span>
+          </div>
+        </div>
+
+        <div class="form-group full-width" *ngIf="f['role'].value === 'professional'">
+          <label for="proficiency">Proficiency</label>
+          <select
+            id="proficiency"
+            formControlName="proficiency"
+            class="form-control"
+            [ngClass]="{'invalid': submitted && f['proficiency'].errors}"
+          >
+            <option value="">Select your proficiency</option>
+            <option value="MO">Medical Officer</option>
+            <option value="sonographer">Sonographer</option>
+            <option value="radiologist">Radiologist</option>
+          </select>
+          <div *ngIf="submitted && f['proficiency'].errors" class="error-text">
+            <span *ngIf="f['proficiency'].errors['required']">Proficiency is required</span>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary" [disabled]="loading">
+        <span *ngIf="loading">Registering...</span>
+        <span *ngIf="!loading">Register</span>
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>Already have an account? <a routerLink="/login">Login</a></p>
+    </div>
+  </div>
+</div>
