@@ -1,0 +1,93 @@
+<div class="qa-container">
+  <section class="hero-section" *ngIf="!isQuizStarted">
+    <div class="hero-content">
+      <h1>QA <span class="text-highlight">Session</span></h1>
+      <p class="hero-description">
+        Test your knowledge with our ultrasound image recognition questions
+      </p>
+      <div class="qa-instructions">
+        <h2>Instructions</h2>
+        <p>
+          Test your diagnostic skills by answering multiple-choice questions (MCQs) based on <b>ultrasound images of abnormal organs</b>. Each question will present an image and several options for identifying the organ or abnormality. After selecting your answer, the system will provide immediate feedback on whether your response is correct or not, helping you improve your knowledge and decision-making abilities.
+        </p>
+      </div>
+      <button class="btn-primary start-button" (click)="startQuiz()">Start Quiz</button>
+    </div>
+  </section>
+
+  <section class="quiz-section" *ngIf="isQuizStarted">
+    <section class="hero-section">
+    <div class="hero-content">
+      <h1>QA <span class="text-highlight">Session</span></h1>
+      <p class="hero-description">
+        Test your knowledge with our ultrasound image recognition questions
+      </p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="qa-progress" *ngIf="!showResults">
+      <div class="timer-container">
+        <span class="material-icons-outlined timer-icon">schedule</span>
+        <span class="timer-text">{{ remainingTime }}</span>
+      </div>
+      <div class="progress-bar">
+        <div
+          class="progress-fill"
+          [style.width]="(currentQuestionIndex / questions.length) * 100 + '%'"
+        ></div>
+      </div>
+      <p class="progress-text">Question {{ currentQuestionIndex + 1 }} of {{ questions.length }}</p>
+    </div>
+
+    <div class="qa-content" *ngIf="currentQuestion && !showResults">
+      <div class="question-card">
+        <h3>{{ currentQuestion.text }}</h3>
+        <div class="image-container">
+          <img [src]="currentQuestion.imageUrl" alt="Ultrasound image" class="question-image">
+        </div>
+        <div class="options-container">
+          <div
+            *ngFor="let option of currentQuestion.options; let i = index"
+            class="option"
+            [class.selected]="currentQuestion.selectedAnswer === i"
+            (click)="selectAnswer(i)"
+          >
+            <span class="option-letter">{{ ['A', 'B', 'C', 'D'][i] }}</span>
+            <span class="option-text">{{ option }}</span>
+          </div>
+        </div>
+        <div class="question-actions">
+          <button
+            class="btn-secondary"
+            [disabled]="currentQuestionIndex === 0"
+            (click)="previousQuestion()"
+          >
+            Previous
+          </button>
+          <button
+            class="btn-primary"
+            [disabled]="currentQuestion.selectedAnswer === undefined"
+            (click)="nextQuestion()"
+          >
+            {{ currentQuestionIndex === questions.length - 1 ? 'Submit' : 'Next' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-container" *ngIf="showResults">
+      <h2>Your Results</h2>
+      <div class="results-summary">
+        <div class="score-card">
+          <div class="score">{{ correctAnswers }}/{{ questions.length }}</div>
+          <p>Correct Answers</p>
+        </div>
+        <div class="score-percentage">
+          <div class="percentage">{{ (correctAnswers / questions.length) * 100 }}%</div>
+          <p>Accuracy</p>
+        </div>
+      </div>
+      <button class="btn-primary" (click)="restartQuiz()">Try Again</button>
+    </div>
+  </section>
