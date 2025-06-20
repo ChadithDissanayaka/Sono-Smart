@@ -1,0 +1,255 @@
+<div class="scans-container">
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1>Ultrasound <span class="text-highlight">Scans</span></h1>
+      <p class="hero-description" *ngIf="authService.getCurrentUser()?.role === 'trainee'">
+        Upload an ultrasound image along with your predicted organ name for AI verification
+      </p>
+      <p class="hero-description" *ngIf="authService.getCurrentUser()?.role === 'professional'">
+        Upload ultrasound images for automatic organ Classification and diagnostic assistance
+      </p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <!-- Trainee Interface -->
+    <div class="trainee-interface" *ngIf="authService.getCurrentUser()?.role === 'trainee'" [@fadeIn]>
+      <div class="instructions-card">
+        <h2>Ultrasound Image Prediction and Practise</h2>
+        <p>
+          Upload an ultrasound image along with your predicted organ name. The AI system will verify whether your prediction is correct and provide feedback. Additionally, you can practice identifying abnormal organs through MCQ-based QA sessions to improve your diagnostic skills.        </p>
+      </div>
+
+      <div class="scan-card" *ngFor="let section of scanSections; let i = index">
+        <div class="scan-header">
+          <h3>Scan #{{i+1}}</h3>
+          <button *ngIf="scanSections.length > 1" class="btn-icon" (click)="removeScanSection(i)">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="upload-section">
+          <div class="upload-container" [class.has-image]="section.imagePreview" (click)="!section.imagePreview && fileInput.click()">
+            <input type="file" #fileInput hidden accept="image/*" (change)="onFileSelected($event, i)">
+            <div *ngIf="!section.imagePreview" class="upload-placeholder">
+              <span class="material-icons-outlined">cloud_upload</span>
+              <p>Click to upload an ultrasound image</p>
+            </div>
+            <img *ngIf="section.imagePreview" [src]="section.imagePreview" alt="Ultrasound preview" class="image-preview">
+          </div>
+          <div class="controls" *ngIf="section.imagePreview">
+            <button class="btn-secondary" (click)="resetForm(i)">Reset</button>
+          </div>
+        </div>
+
+        <div class="prediction-section" *ngIf="section.imagePreview">
+          <h3>Your Prediction</h3>
+          <div class="prediction-form">
+            <div class="form-group">
+              <label for="organPrediction{{i}}">Which organ do you see in this image?</label>
+              <select id="organPrediction{{i}}" [(ngModel)]="section.userPrediction" class="form-control">
+                <option value="" disabled selected>Select an organ</option>
+                <option value="Liver">Liver</option>
+                <option value="Kidney">Kidney</option>
+                <option value="Spleen">Spleen</option>
+                <option value="Gallbladder">Gallbladder</option>
+                <option value="Bladder">Bladder</option>
+                <option value="Bowel">Bowel</option>
+              </select>
+            </div>
+            <button class="btn-primary submit-btn" [disabled]="!section.userPrediction || isLoading" (click)="submitForTrainee(i)">
+              <span *ngIf="!isLoading">Submit Prediction</span>
+              <div *ngIf="isLoading" class="loading-spinner-small"></div>
+            </button>
+          </div>
+
+          <div class="result-section" *ngIf="section.predictionResult">
+            <div class="result-card" [class.success]="section.predictionSuccess" [class.error]="!section.predictionSuccess">
+              <span class="material-icons-outlined result-icon">
+                {{ section.predictionSuccess ? 'check_circle' : 'error' }}
+              </span>
+              <div class="result-content">
+                <h4>{{ section.predictionSuccess ? 'Correct!' : 'Incorrect' }}</h4>
+                <p *ngIf="section.predictionSuccess">Great job! You correctly identified this as a {{ section.predictionResult }}.</p>
+                <p *ngIf="!section.predictionSuccess">This is actually a {{ section.predictionResult }}. Review the image characteristics and try again.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="add-scan-section" *ngIf="scanSections.length > 0 && scanSections[0].imagePreview">
+        <button class="btn-primary add-scan-btn" (click)="addScanSection()">
+          <span class="material-icons-outlined">add</span> Add New Scan
+        </button>
+
+        <button class="btn-primary end-session-btn" *ngIf="authService.getCurrentUser()?.role === 'trainee' && hasCompletedScans()" (click)="endSession()">
+          <span class="material-icons-outlined">save</span> End Session
+        </button>
+      </div>
+    </div>
+
+    <!-- Professional Interface -->
+    <div class="professional-interface" *ngIf="authService.getCurrentUser()?.role === 'professional'" [@fadeIn]>
+      <div class="instructions-card">
+        <h2>Real-Time Organ Classification</h2>
+        <p>
+          Upload the ultrasound image of the patient to begin organ Classification. The AI system will automatically identify and label the organs, including the <strong>bladder, bowel, gallbladder, kidney, liver, and spleen</strong>. Review the results with confidence levels for each classify organ and you can generate a diagnostic report for patient records.
+        </p>
+      </div>
+
+      <div class="scan-card" *ngFor="let section of scanSections; let i = index">
+        <div class="scan-header">
+          <h3>Scan #{{i+1}}</h3>
+          <button *ngIf="scanSections.length > 1" class="btn-icon" (click)="removeScanSection(i)">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <div class="upload-section">
+          <div class="upload-container" [class.has-image]="section.imagePreview" (click)="!section.imagePreview && fileInput.click()">
+            <input type="file" #fileInput hidden accept="image/*" (change)="onFileSelected($event, i)">
+            <div *ngIf="!section.imagePreview" class="upload-placeholder">
+              <span class="material-icons-outlined">cloud_upload</span>
+              <p>Click to upload a patient's ultrasound image</p>
+            </div>
+            <img *ngIf="section.imagePreview" [src]="section.imagePreview" alt="Ultrasound preview" class="image-preview">
+          </div>
+          <div class="controls" *ngIf="section.imagePreview">
+            <button class="btn-secondary" (click)="resetForm(i)">Reset</button>
+          </div>
+        </div>
+
+        <div class="detection-section" *ngIf="section.imagePreview">
+          <div class="button-group">
+            <button class="btn-primary submit-btn" [disabled]="isLoading" (click)="submitForProfessional(i)">
+              <span *ngIf="!isLoading">Get Results</span>
+              <div *ngIf="isLoading" class="loading-spinner-small"></div>
+            </button>
+            <button class="btn-primary" (click)="openReportDialog(i)" [disabled]="isLoading">
+              <span *ngIf="!isLoading">Create Report</span>
+              <div *ngIf="isLoading" class="loading-spinner-small"></div>
+            </button>
+          </div>
+
+          <div class="results-container" *ngIf="section.detectedOrgans.length > 0">
+            <h3>Classification Result</h3>
+            <div class="organs-list">
+              <div class="organ-item">
+                <div class="organ-name">Organ Name: {{ section.detectedOrgans[0].name }}</div>
+                <div class="organ-name">Confidence: {{ confident.confidence }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="add-scan-section" *ngIf="scanSections.length > 0 && scanSections[0].imagePreview">
+        <button class="btn-primary add-scan-btn" (click)="addScanSection()">
+          <span class="material-icons-outlined">add</span> Add New Scan
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="loading-container" *ngIf="isLoading && !imagePreview">
+    <div class="loading-spinner"></div>
+    <p>Processing...</p>
+  </div>
+
+  <!-- Report Creation Dialog -->
+  <div class="modal-overlay" *ngIf="showReportDialog" (click)="closeReportDialog($event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create Report</h2>
+        <button class="close-btn" (click)="closeReportDialog($event)">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Patient Selection and Auto-filled Details -->
+        <div class="form-group">
+          <label for="patientSelect">Select Patient</label>
+          <select id="patientSelect" [(ngModel)]="selectedPatientId" (change)="onPatientSelected()" class="form-control" required>
+            <option value="">-- Select a patient --</option>
+            <option *ngFor="let patient of patients" [value]="patient._id">{{ patient.firstName }} {{ patient.lastName }}</option>
+          </select>
+        </div>
+
+        <!-- Patient Details (Auto-filled) -->
+        <div class="patient-details" *ngIf="selectedPatient">
+          <div class="form-row">
+            <div class="form-group half-width">
+              <label>Age</label>
+              <input type="text" [value]="calculateAge(selectedPatient.dateOfBirth)" class="form-control" readonly>
+            </div>
+            <div class="form-group half-width">
+              <label>Gender</label>
+              <input type="text" [value]="selectedPatient.gender" class="form-control" readonly>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half-width">
+              <label>Email</label>
+              <input type="text" [value]="selectedPatient.email || 'N/A'" class="form-control" readonly>
+            </div>
+            <div class="form-group half-width">
+              <label>Phone</label>
+              <input type="text" [value]="selectedPatient.phone || 'N/A'" class="form-control" readonly>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan Images Section -->
+        <div class="form-group">
+          <label>Image</label>
+          <div class="scan-image-container">
+            <div *ngIf="scanSections[activeSectionIndex]?.imagePreview" class="scan-preview">
+              <img [src]="scanSections[activeSectionIndex].imagePreview" alt="Scan image" class="scan-thumbnail">
+              <div class="form-group">
+                <label for="organType">Organ Name</label>
+                <select id="organType" [(ngModel)]="scanSections[activeSectionIndex].reportOrgan" class="form-control">
+                  <option value="" disabled selected>Select organ</option>
+                  <option value="Liver">Liver</option>
+                  <option value="Kidney">Kidney</option>
+                  <option value="Spleen">Spleen</option>
+                  <option value="Gallbladder">Gallbladder</option>
+                  <option value="Bladder">Bladder</option>
+                  <option value="Bowel">Bowel</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Details -->
+        <div class="form-group">
+          <label for="diagnosticName">Diagnostic Name</label>
+          <input type="text" id="diagnosticName" [(ngModel)]="diagnosticName" class="form-control" placeholder="Enter diagnostic name">
+        </div>
+
+        <div class="form-group">
+          <label for="instructions">Instructions</label>
+          <textarea id="instructions" [(ngModel)]="instructions" class="form-control" rows="3" placeholder="Enter instructions for the patient"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="conditionDetails">Condition Details</label>
+          <textarea id="conditionDetails" [(ngModel)]="conditionDetails" class="form-control" rows="4" placeholder="Enter details about the condition"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="reportNotes">Additional Notes</label>
+          <textarea id="reportNotes" [(ngModel)]="reportNotes" class="form-control" rows="3" placeholder="Enter any additional notes or observations"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeReportDialog($event)">Cancel</button>
+        <button class="btn-primary" (click)="generateReport()" [disabled]="isLoading || !selectedPatientId">
+          <span *ngIf="!isLoading">Generate</span>
+          <div *ngIf="isLoading" class="loading-spinner-small"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
