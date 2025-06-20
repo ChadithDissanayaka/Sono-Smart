@@ -1,0 +1,247 @@
+<div class="patient-container">
+  <section class="hero-section">
+    <div class="hero-content">
+      <h1>Patient <span class="text-highlight">Management</span></h1>
+      <p class="hero-description">
+        Manage your patients' information and medical records
+      </p>
+    </div>
+  </section>
+
+  <section class="content-section">
+    <div class="action-bar">
+      <button class="btn-primary" (click)="showAddPatientForm()">Add New Patient</button>
+      <div class="search-container">
+        <input
+          type="text"
+          placeholder="Search patients..."
+          [(ngModel)]="searchTerm"
+          (input)="filterPatients()"
+          class="search-input"
+        >
+        <span class="material-icons-outlined search-icon">search</span>
+      </div>
+    </div>
+
+    <!-- Patient Form -->
+    <div class="patient-form-container" *ngIf="showForm">
+      <div class="form-card">
+        <h2>{{ isEditing ? 'Edit Patient' : 'Add New Patient' }}</h2>
+        <form (submit)="savePatient()">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstName">First Name</label>
+              <input
+                type="text"
+                id="firstName"
+                name="firstName"
+                [(ngModel)]="currentPatient.firstName"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input
+                type="text"
+                id="lastName"
+                name="lastName"
+                [(ngModel)]="currentPatient.lastName"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label for="dateOfBirth">Date of Birth</label>
+              <input
+                type="date"
+                id="dateOfBirth"
+                name="dateOfBirth"
+                [(ngModel)]="currentPatient.dateOfBirth"
+                required
+              >
+            </div>
+            <div class="form-group">
+              <label for="gender">Gender</label>
+              <select
+                id="gender"
+                name="gender"
+                [(ngModel)]="currentPatient.gender"
+                required
+              >
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                [(ngModel)]="currentPatient.email"
+              >
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone</label>
+              <input
+                type="tel"
+                id="phone"
+                name="phone"
+                [(ngModel)]="currentPatient.phone"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="address">Address</label>
+              <input
+                type="text"
+                id="address"
+                name="address"
+                [(ngModel)]="currentPatient.address"
+              >
+            </div>
+            <div class="form-group full-width">
+              <label for="medicalHistory">Medical History</label>
+              <textarea
+                id="medicalHistory"
+                name="medicalHistory"
+                [(ngModel)]="currentPatient.medicalHistory"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+            <button type="submit" class="btn-primary">{{ isEditing ? 'Update' : 'Save' }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div class="error-message" *ngIf="errorMessage">
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-container" *ngIf="isLoading">
+      <div class="loading-spinner"></div>
+      <p>Loading...</p>
+    </div>
+
+    <!-- Patient Table -->
+    <div class="patient-table-container" *ngIf="!showForm && !isLoading">
+      <table class="patient-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Date of Birth</th>
+            <th>Gender</th>
+            <th>Contact</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="filteredPatients.length === 0">
+            <td colspan="5" class="no-data">No patients found</td>
+          </tr>
+          <tr *ngFor="let patient of filteredPatients">
+            <td>
+              <div class="patient-info">
+                <div class="patient-avatar" [title]="patient.firstName + ' ' + patient.lastName">
+                  {{ patient.firstName[0] }}
+                </div>
+                <span>{{ patient.firstName }} {{ patient.lastName }}</span>
+              </div>
+            </td>
+            <td>{{ formatDate(patient.dateOfBirth) }}</td>
+            <td>{{ patient.gender }}</td>
+            <td>
+              <div *ngIf="patient.email">{{ patient.email }}</div>
+              <div *ngIf="patient.phone">{{ patient.phone }}</div>
+            </td>
+            <td class="actions-cell">
+              <button class="action-btn view-btn" (click)="viewPatient(patient)">
+                <span class="material-icons-outlined">visibility</span>
+              </button>
+              <button class="action-btn edit-btn" (click)="editPatient(patient)">
+                <span class="material-icons-outlined">edit</span>
+              </button>
+              <button class="action-btn delete-btn" (click)="confirmDelete(patient)">
+                <span class="material-icons-outlined">delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Patient Details</h2>
+          <button class="close-btn" (click)="closeModal($event)">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body" *ngIf="selectedPatient">
+          <div class="patient-details">
+            <div class="detail-row">
+              <div class="detail-label">Name:</div>
+              <div class="detail-value">{{ selectedPatient.firstName }} {{ selectedPatient.lastName }}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Date of Birth:</div>
+              <div class="detail-value">{{ formatDate(selectedPatient.dateOfBirth) }}</div>
+            </div>
+            <div class="detail-row">
+              <div class="detail-label">Gender:</div>
+              <div class="detail-value">{{ selectedPatient.gender }}</div>
+            </div>
+            <div class="detail-row" *ngIf="selectedPatient.email">
+              <div class="detail-label">Email:</div>
+              <div class="detail-value">{{ selectedPatient.email }}</div>
+            </div>
+            <div class="detail-row" *ngIf="selectedPatient.phone">
+              <div class="detail-label">Phone:</div>
+              <div class="detail-value">{{ selectedPatient.phone }}</div>
+            </div>
+            <div class="detail-row" *ngIf="selectedPatient.address">
+              <div class="detail-label">Address:</div>
+              <div class="detail-value">{{ selectedPatient.address }}</div>
+            </div>
+            <div class="detail-row" *ngIf="selectedPatient.medicalHistory">
+              <div class="detail-label">Medical History:</div>
+              <div class="detail-value">{{ selectedPatient.medicalHistory }}</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+          <button class="btn-primary" (click)="selectedPatient && editPatient(selectedPatient)">Edit</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+      <div class="modal-content delete-modal">
+        <div class="modal-header">
+          <h2>Confirm Deletion</h2>
+          <button class="close-btn" (click)="closeModal($event)">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete the patient record for <strong>{{ selectedPatient?.firstName }} {{ selectedPatient?.lastName }}</strong>?</p>
+          <p class="warning-text">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+          <button class="btn-danger" (click)="deletePatient()">Delete</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
