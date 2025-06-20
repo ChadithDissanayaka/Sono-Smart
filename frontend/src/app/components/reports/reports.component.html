@@ -1,0 +1,823 @@
+<div class="reports-container">
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1>Reports Dashboard</h1>
+      <p class="hero-description" *ngIf="authService.getCurrentUser()?.role === 'trainee'">
+        View your training progress and performance history
+      </p>
+      <p class="hero-description" *ngIf="authService.getCurrentUser()?.role === 'professional'">
+        Manage and review patient diagnostic reports
+      </p>
+    </div>
+  </div>
+
+  <!-- Report Form -->
+  <div class="patient-form-container" *ngIf="showForm">
+    <div class="form-card">
+      <h2>{{ isEditing ? 'Edit Report' : 'Add New Report' }}</h2>
+      <form (submit)="saveReport()">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="diagnosticName">Diagnostic Name</label>
+            <input
+              type="text"
+              id="diagnosticName"
+              name="diagnosticName"
+              [(ngModel)]="currentReport.diagnosticName"
+              required
+            >
+          </div>
+          <div class="form-group">
+            <label for="instructions">Instructions</label>
+            <textarea
+              id="instructions"
+              name="instructions"
+              [(ngModel)]="currentReport.instructions"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="conditionDetails">Condition Details</label>
+            <textarea
+              id="conditionDetails"
+              name="conditionDetails"
+              [(ngModel)]="currentReport.conditionDetails"
+              rows="3"
+            ></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label for="additionalNotes">Additional Notes</label>
+            <textarea
+              id="additionalNotes"
+              name="additionalNotes"
+              [(ngModel)]="currentReport.additionalNotes"
+              rows="3"
+            ></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancelForm()">Cancel</button>
+          <button type="submit" class="btn-primary">{{ isEditing ? 'Update' : 'Save' }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Loading Indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="loading-spinner"></div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+    <p>Loading reports...</p>
+  </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="errorMessage">
+    {{ errorMessage }}
+  </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Trainee Reports View -->
+  <div class="trainee-reports" *ngIf="!isLoading && authService.getCurrentUser()?.role === 'trainee'" [@fadeIn]>
+    <h2 class="section-title">Training History</h2>
+
+    <div class="report-table-container">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Session Type</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+            <th>Duration</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Quiz Results -->
+          <ng-container *ngFor="let result of quizResults">
+            <tr>
+              <td>{{ formatDate(result.createdAt || '') }}</td>
+              <td>QA Session</td>
+              <td>{{ formatTime(result.startTime?.toString() || '') }}</td>
+              <td>{{ formatTime(result.endTime?.toString() || '') }}</td>
+              <td>{{ formatDuration(result.startTime, result.endTime) }}</td>
+              <td>
+                <span class="result-badge">
+                  {{ result.correctAnswers }}/{{ result.totalQuestions }} correct
+                  ({{ (result.correctAnswers / result.totalQuestions * 100).toFixed(0) }}%)
+                </span>
+              </td>
+            </tr>
+          </ng-container>
+
+          <!-- Scan Results -->
+          <ng-container *ngFor="let result of scanResults">
+            <tr>
+              <td>{{ formatDate(result.createdAt || '') }}</td>
+              <td>Scan Session</td>
+              <td>{{ formatTime(result.startTime?.toString() || '') }}</td>
+              <td>{{ formatTime(result.endTime?.toString() || '') }}</td>
+              <td>{{ formatDuration(result.startTime, result.endTime) }}</td>
+              <td>
+                <span class="result-badge">
+                  {{ result.correctScans }}/{{ result.totalScans }} correct
+                  ({{ (result.correctScans / result.totalScans * 100).toFixed(0) }}%)
+                </span>
+              </td>
+            </tr>
+          </ng-container>
+
+          <!-- No data message -->
+          <tr *ngIf="quizResults.length === 0 && scanResults.length === 0">
+            <td colspan="6" class="no-data">No training history found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+  </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+
+  <!-- Professional Reports View -->
+  <div class="professional-reports" *ngIf="!isLoading && authService.getCurrentUser()?.role === 'professional'" [@fadeIn]>
+    <h2 class="section-title">Patient Reports</h2>
+
+    <div class="report-table-container">
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th>Report ID</th>
+            <th>Patient Name</th>
+            <th>Diagnostic</th>
+            <th>Organ</th>
+            <th>Report</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let report of patientReports">
+            <tr>
+              <td>{{ report.friendlyId || report._id }}</td>
+              <td>{{ report.patient.firstName }} {{ report.patient.lastName }}</td>
+              <td>{{ report.diagnosticName }}</td>
+              <td>
+                <span *ngIf="report.scanImages && report.scanImages.length > 0">
+                  {{ report.scanImages[0].organ }}
+                </span>
+                <span *ngIf="!report.scanImages || report.scanImages.length === 0">N/A</span>
+              </td>
+              <td class="pdf-cell">
+                <button class="action-btn pdf-btn" (click)="generatePdf(report)" title="Generate PDF">
+                  <span class="material-icons-outlined">picture_as_pdf</span>
+                </button>
+              </td>
+              <td class="actions-cell">
+                <button class="action-btn view-btn" (click)="viewReport(report)" title="View Report">
+                  <span class="material-icons-outlined">visibility</span>
+                </button>
+                <button class="action-btn edit-btn" (click)="editReport(report)" title="Edit Report">
+                  <span class="material-icons-outlined">edit</span>
+                </button>
+                <button class="action-btn delete-btn" (click)="confirmDelete(report)" title="Delete Report">
+                  <span class="material-icons-outlined">delete</span>
+                </button>
+              </td>
+            </tr>
+          </ng-container>
+
+          <!-- No data message -->
+          <tr *ngIf="patientReports.length === 0">
+            <td colspan="6" class="no-data">No patient reports found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
+  </div>
+
+<!-- Report Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal($event)">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Report Details</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body" *ngIf="selectedReport">
+      <div class="report-details">
+        <div class="detail-row">
+          <div class="detail-label">Report ID:</div>
+          <div class="detail-value">{{ selectedReport.friendlyId || selectedReport._id }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Patient:</div>
+          <div class="detail-value">{{ selectedReport.patient.firstName }} {{ selectedReport.patient.lastName }}</div>
+        </div>
+        <div class="detail-row">
+          <div class="detail-label">Diagnostic:</div>
+          <div class="detail-value">{{ selectedReport.diagnosticName }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Organ:</div>
+          <div class="detail-value">{{ selectedReport.scanImages[0].organ }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.instructions">
+          <div class="detail-label">Instructions:</div>
+          <div class="detail-value">{{ selectedReport.instructions }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.conditionDetails">
+          <div class="detail-label">Condition Details:</div>
+          <div class="detail-value">{{ selectedReport.conditionDetails }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.additionalNotes">
+          <div class="detail-label">Additional Notes:</div>
+          <div class="detail-value">{{ selectedReport.additionalNotes }}</div>
+        </div>
+        <div class="detail-row" *ngIf="selectedReport.scanImages && selectedReport.scanImages.length > 0">
+          <div class="detail-label">Scan Images:</div>
+          <div class="detail-value scan-images">
+            <div class="scan-image-item" *ngFor="let image of selectedReport.scanImages">
+              <img [src]="image.imageUrl" [alt]="image.organ" class="scan-image">
+              <div class="scan-image-info">
+                <div><strong>Organ:</strong> {{ image.organ }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Close</button>
+      <button class="btn-primary" (click)="selectedReport && editReport(selectedReport)">Edit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal($event)">
+  <div class="modal-content delete-modal">
+    <div class="modal-header">
+      <h2>Confirm Deletion</h2>
+      <button class="close-btn" (click)="closeModal($event)">
+        <span class="material-icons-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p>Are you sure you want to delete this report?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeModal($event)">Cancel</button>
+      <button class="btn-danger" (click)="deleteReport()">Delete</button>
+    </div>
+  </div>
+</div>
