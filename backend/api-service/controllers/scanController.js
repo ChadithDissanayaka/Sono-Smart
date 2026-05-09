@@ -1,7 +1,8 @@
 const ScanResult = require('../models/ScanResult');
 const User = require('../models/User');
-const { spawn } = require('child_process');
-const path = require('path');
+
+// Base URL for the FastAPI organ detection service
+const ORGAN_DETECTION_API = process.env.ORGAN_DETECTION_API || 'http://localhost:8000';
 
 // @desc    Save scan result
 // @route   POST /api/scan/results
@@ -10,15 +11,12 @@ const saveScanResult = async (req, res) => {
   try {
     const { scanSections, totalScans, correctScans, startTime, endTime } = req.body;
 
-    // Calculate accuracy
     const accuracy = (correctScans / totalScans) * 100;
 
-    // Calculate session duration in seconds
     const startTimeDate = new Date(startTime);
     const endTimeDate = new Date(endTime);
     const sessionDuration = Math.round((endTimeDate - startTimeDate) / 1000);
 
-    // Create scan result
     const scanResult = await ScanResult.create({
       user: req.user.id,
       scanSections,
@@ -80,7 +78,6 @@ const getScanResult = async (req, res) => {
       });
     }
 
-    // Make sure user owns the scan result
     if (scanResult.user.toString() !== req.user.id && req.user.role !== 'professional') {
       return res.status(401).json({
         success: false,
@@ -116,63 +113,29 @@ const detectOrgans = async (req, res) => {
       });
     }
 
-    // Path to the Python script
-    const scriptPath = path.join(__dirname, '..', 'utils', 'organDetection.py');
-
-    // Spawn Python process
-    const pythonProcess = spawn('python', [scriptPath]);
-
-    let result = '';
-    let errorOutput = '';
-
-    // Collect data from script
-    pythonProcess.stdout.on('data', (data) => {
-      const output = data.toString();
-      // Only add to result if the line starts with '{'
-      if (output.trim().startsWith('{')) {
-        result += output;
-      }
+    // Call the FastAPI organ detection service
+    const response = await fetch(`${ORGAN_DETECTION_API}/detect-organs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData })
     });
 
-    // Collect error data
-    pythonProcess.stderr.on('data', (data) => {
-      errorOutput += data.toString();
+    if (!response.ok) {
+      const errorBody = await response.json().catch(() => ({}));
+      console.error('FastAPI error:', errorBody);
+      return res.status(502).json({
+        success: false,
+        message: 'Organ detection service returned an error',
+        error: errorBody.detail || 'Unknown error'
+      });
+    }
+
+    const detectionResult = await response.json();
+
+    res.status(200).json({
+      success: true,
+      data: detectionResult
     });
-
-    // Handle process completion
-    pythonProcess.on('close', (code) => {
-      if (code !== 0) {
-        console.error(`Python process exited with code ${code}`);
-        console.error(`Error output: ${errorOutput}`);
-        return res.status(500).json({
-          success: false,
-          message: 'Error processing image',
-          error: errorOutput
-        });
-      }
-
-      try {
-        // Parse the JSON result from the Python script
-        console.log('Detection result:', result);
-        const detectionResult = JSON.parse(result);
-
-        res.status(200).json({
-          success: true,
-          data: detectionResult
-        });
-      } catch (parseError) {
-        console.error('Error parsing Python script output:', parseError);
-        res.status(500).json({
-          success: false,
-          message: 'Error parsing detection results',
-          error: parseError.message
-        });
-      }
-    });
-
-    // Send the image data to the Python script
-    pythonProcess.stdin.write(imageData);
-    pythonProcess.stdin.end();
 
   } catch (error) {
     console.error('Error detecting organs:', error);

@@ -1,0 +1,6 @@
+# Port the FastAPI server listens on
+PORT=8000
+
+# Path to the YOLO model weights file
+# Default: models/Best_Model.pt (relative to main.py)
+MODEL_PATH=models/Best_Model.pt
