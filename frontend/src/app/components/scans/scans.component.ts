@@ -107,7 +107,7 @@ export class ScansComponent implements OnInit {
       this.scanSections[sectionIndex].predictionSuccess = null;
       this.scanSections[sectionIndex].detectedOrgans = [];
       this.isReportGenerated = false;
-      
+
     }
   }
 
@@ -358,6 +358,15 @@ export class ScansComponent implements OnInit {
     return this.scanSections.some(
       (section) => section.predictionResult && section.userPrediction
     );
+  }
+  generateWithClaude(): void {
+    // TODO: implement Claude AI generation
+    console.log('Generate with Claude AI');
+  }
+
+  generateWithGPT(): void {
+    // TODO: implement GPT-4 generation
+    console.log('Generate with GPT-4');
   }
 
   // End session and save all results at once
