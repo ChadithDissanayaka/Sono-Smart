@@ -107,7 +107,7 @@ export class ScansComponent implements OnInit {
       this.scanSections[sectionIndex].predictionSuccess = null;
       this.scanSections[sectionIndex].detectedOrgans = [];
       this.isReportGenerated = false;
-      
+
     }
   }
 
@@ -239,33 +239,21 @@ export class ScansComponent implements OnInit {
 
   closeReportDialog(event: Event): void {
     const target = event.target as HTMLElement;
-    if (
-      target.classList.contains('modal-overlay') ||
-      target.classList.contains('close-btn') ||
-      target.closest('.close-btn') ||
-      target.classList.contains('btn-secondary')
-    ) {
+    const isOverlay = target.classList.contains('modal-overlay');
+    const isCloseBtn = target.classList.contains('close-btn') || !!target.closest('.close-btn');
+    const isCancelBtn = target.classList.contains('btn-secondary');
+
+    if (isOverlay || isCloseBtn || isCancelBtn) {
       this.showReportDialog = false;
     }
   }
 
   generateReport(): void {
-    if (!this.selectedPatientId || !this.selectedPatient) {
-      return; // Require patient selection
-    }
+    if (!this.selectedPatientId || !this.selectedPatient) return;
+    if (this.isLoading) return; // ← guard against double-click / double-trigger
 
     this.isLoading = true;
 
-    // Get selected patient information
-    const patientInfo = {
-      name: `${this.selectedPatient.firstName} ${this.selectedPatient.lastName}`,
-      age: this.calculateAge(this.selectedPatient.dateOfBirth),
-      gender: this.selectedPatient.gender,
-      email: this.selectedPatient.email || 'N/A',
-      phone: this.selectedPatient.phone || 'N/A',
-    };
-
-    // Get only the active scan section information
     const activeSection = this.scanSections[this.activeSectionIndex];
     const scanImages: ScanImage[] = [];
 
@@ -276,7 +264,6 @@ export class ScansComponent implements OnInit {
       });
     }
 
-    // Save the patient report to the database
     this.reportService.savePatientReport({
       patient: this.selectedPatientId,
       scanImages: scanImages,
@@ -358,6 +345,15 @@ export class ScansComponent implements OnInit {
     return this.scanSections.some(
       (section) => section.predictionResult && section.userPrediction
     );
+  }
+  generateWithClaude(): void {
+    // TODO: implement Claude AI generation
+    console.log('Generate with Claude AI');
+  }
+
+  generateWithGPT(): void {
+    // TODO: implement GPT-4 generation
+    console.log('Generate with GPT-4');
   }
 
   // End session and save all results at once
