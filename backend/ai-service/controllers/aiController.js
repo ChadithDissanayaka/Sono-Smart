@@ -1,21 +1,19 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { Groq } = require('groq-sdk');
 const { OpenRouter } = require('@openrouter/sdk');
 
-// ─────────────────────────────────────────────────────────────
 // Clients
-// ─────────────────────────────────────────────────────────────
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
+// Using Groq as Claude replacement
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
 });
 
+// OpenRouter GPT
 const openrouter = new OpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY
 });
 
-// ─────────────────────────────────────────────────────────────
 // Prompt Builder
-// ─────────────────────────────────────────────────────────────
 
 const buildPrompt = (diagnosticName, organName) => `
 You are a medical report assistant for an ultrasound training application.
@@ -34,31 +32,33 @@ Respond ONLY with a valid JSON object.
 }
 `.trim();
 
-// ─────────────────────────────────────────────────────────────
 // Safe JSON Parser
-// ─────────────────────────────────────────────────────────────
 
 const parseAIResponse = (text) => {
+
   try {
+
     return JSON.parse(
       text.replace(/```json|```/g, '').trim()
     );
+
   } catch (error) {
+
     console.error('JSON Parse Error:', text);
 
     throw new Error('Invalid JSON response from AI');
   }
 };
 
-// ─────────────────────────────────────────────────────────────
-// Claude
-// ─────────────────────────────────────────────────────────────
+// Claude Endpoint (Using Groq)
+// Endpoint: /api/ai/claude
 
 const generateWithClaude = async (req, res) => {
 
   const { diagnosticName, organName } = req.body;
 
   if (!diagnosticName) {
+
     return res.status(400).json({
       success: false,
       message: 'diagnosticName is required'
@@ -67,29 +67,36 @@ const generateWithClaude = async (req, res) => {
 
   try {
 
-    const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-
-      max_tokens: 1000,
+    const completion = await groq.chat.completions.create({
 
       messages: [
         {
           role: 'user',
           content: buildPrompt(diagnosticName, organName)
         }
-      ]
+      ],
+
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
+
+      temperature: 0.5,
+
+      max_completion_tokens: 1024,
+
+      top_p: 1,
+
+      stream: false
     });
 
-    const text = message.content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .join('');
+    const text =
+      completion?.choices?.[0]?.message?.content || '';
 
     const fields = parseAIResponse(text);
 
     return res.status(200).json({
       success: true,
-      provider: 'claude',
+      provider: 'groq',
+      endpoint: 'claude',
+      model: 'meta-llama/llama-4-scout-17b-16e-instruct',
       data: fields
     });
 
@@ -105,15 +112,14 @@ const generateWithClaude = async (req, res) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────
 // OpenRouter GPT
-// ─────────────────────────────────────────────────────────────
-
+// Endpoint: /api/ai/gpt
 const generateWithGPT = async (req, res) => {
 
   const { diagnosticName, organName } = req.body;
 
   if (!diagnosticName) {
+
     return res.status(400).json({
       success: false,
       message: 'diagnosticName is required'
