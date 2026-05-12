@@ -5,6 +5,7 @@ import { AuthService } from '../../services/auth.service';
 import { PatientService, Patient } from '../../services/patient.service';
 import { ScanService, ScanSection } from '../../services/scan.service';
 import { ReportService, ScanImage } from '../../services/report.service';
+import { AiReportService } from '../../services/ai-report.service';
 import {
   trigger,
   state,
@@ -46,7 +47,7 @@ export class ScansComponent implements OnInit {
     userPrediction: string;
     reportOrgan: string; // Added for report creation
   }[] = [];
-  confident : any = null;
+  confident: any = null;
   // Current active scan section (for backward compatibility)
   get selectedFile(): File | null {
     return this.scanSections[0]?.selectedFile || null;
@@ -87,8 +88,9 @@ export class ScansComponent implements OnInit {
     public authService: AuthService,
     private patientService: PatientService,
     private scanService: ScanService,
-    private reportService: ReportService
-  ) {}
+    private reportService: ReportService,
+    private aiReportService: AiReportService
+  ) { }
 
   ngOnInit(): void {
     // Initialize component with first scan section
@@ -347,13 +349,95 @@ export class ScansComponent implements OnInit {
     );
   }
   generateWithClaude(): void {
-    // TODO: implement Claude AI generation
-    console.log('Generate with Claude AI');
+
+    if (this.isLoading) return;
+
+    const activeSection = this.scanSections[this.activeSectionIndex];
+
+    if (!this.diagnosticName || !activeSection?.reportOrgan) {
+      alert('Diagnostic Name and Organ Name are required');
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.aiReportService.generateWithClaude(
+      this.diagnosticName,
+      activeSection.reportOrgan
+    ).subscribe({
+
+      next: (response) => {
+
+        if (response?.data) {
+
+          this.instructions =
+            response.data.instructions || '';
+
+          this.conditionDetails =
+            response.data.conditionDetails || '';
+
+          this.reportNotes =
+            response.data.additionalNotes || '';
+        }
+
+        this.isLoading = false;
+      },
+
+      error: (error) => {
+
+        console.error('Claude AI generation error:', error);
+
+        this.isLoading = false;
+
+        alert('Failed to generate AI report');
+      }
+    });
   }
 
   generateWithGPT(): void {
-    // TODO: implement GPT-4 generation
-    console.log('Generate with GPT-4');
+
+    if (this.isLoading) return;
+
+    const activeSection = this.scanSections[this.activeSectionIndex];
+
+    if (!this.diagnosticName || !activeSection?.reportOrgan) {
+      alert('Diagnostic Name and Organ Name are required');
+      return;
+    }
+
+    this.isLoading = true;
+
+    this.aiReportService.generateWithGPT(
+      this.diagnosticName,
+      activeSection.reportOrgan
+    ).subscribe({
+
+      next: (response) => {
+
+        if (response?.data) {
+
+          this.instructions =
+            response.data.instructions || '';
+
+          this.conditionDetails =
+            response.data.conditionDetails || '';
+
+          this.reportNotes =
+            response.data.additionalNotes || '';
+        }
+
+        this.isLoading = false;
+      },
+
+      error: (error) => {
+
+        console.error('GPT AI generation error:', error);
+
+        this.isLoading = false;
+
+        alert('Failed to generate AI report');
+      }
+    });
   }
 
   // End session and save all results at once
